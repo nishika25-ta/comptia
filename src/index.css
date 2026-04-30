@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --bg-from: #f5f7fb;
+  --bg-to: #eef2f9;
+  --ink: #0e1b34;
+  --ink-muted: #475669;
+  --surface: #ffffff;
+  --surface-muted: #f7f9fc;
+  --border: #e2e8f1;
+  --brand: #1378f5;
+}
+
+html.dark {
+  --bg-from: #0a1226;
+  --bg-to: #07101f;
+  --ink: #eef2f8;
+  --ink-muted: #a3b1c7;
+  --surface: #101a31;
+  --surface-muted: #0d1628;
+  --border: #1e2c4d;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--bg-from) 0%, var(--bg-to) 100%);
+  background-attachment: fixed;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.32);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Print friendly */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border bg-white border-ink-200 shadow-card transition-shadow;
+    @apply dark:bg-ink-900/80 dark:border-ink-800 dark:backdrop-blur;
+  }
+  .card-hover {
+    @apply hover:shadow-card-lg hover:-translate-y-0.5 transition-all duration-200;
+  }
+  .surface {
+    @apply bg-white dark:bg-ink-900;
+  }
+  .surface-muted {
+    @apply bg-ink-50 dark:bg-ink-950;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-ink-950;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-sm;
+    @apply dark:bg-brand-500 dark:hover:bg-brand-400 dark:text-ink-950;
+  }
+  .btn-secondary {
+    @apply btn bg-ink-100 text-ink-800 hover:bg-ink-200;
+    @apply dark:bg-ink-800 dark:text-ink-100 dark:hover:bg-ink-700;
+  }
+  .btn-ghost {
+    @apply btn text-ink-700 hover:bg-ink-100 dark:text-ink-200 dark:hover:bg-ink-800;
+  }
+  .btn-outline {
+    @apply btn border border-ink-200 text-ink-700 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-100 dark:hover:bg-ink-800;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .input {
+    @apply rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400;
+    @apply dark:bg-ink-900 dark:border-ink-700 dark:text-ink-100 dark:placeholder:text-ink-500;
+  }
+  .label {
+    @apply text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400;
+  }
+  .kbd {
+    @apply inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-md;
+    @apply bg-ink-100 text-ink-600 text-xs font-mono border border-ink-200;
+    @apply dark:bg-ink-800 dark:text-ink-300 dark:border-ink-700;
+  }
+  .link {
+    @apply text-brand-600 hover:text-brand-700 dark:text-brand-300 dark:hover:text-brand-200 underline-offset-2 hover:underline;
+  }
+  .divider {
+    @apply h-px w-full bg-ink-200 dark:bg-ink-800;
+  }
+}
+
+/* Notes prose styles (when rendering structured blocks). */
+.notes-prose h2 {
+  @apply font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-ink-50 mt-10 mb-3;
+  scroll-margin-top: 6rem;
+}
+.notes-prose h3 {
+  @apply font-display text-lg font-semibold text-ink-800 dark:text-ink-100 mt-6 mb-2;
+}
+.notes-prose p {
+  @apply text-[0.975rem] leading-7 text-ink-700 dark:text-ink-200 mb-4;
+}
+.notes-prose ul {
+  @apply space-y-2 mb-4 pl-0;
+}
+.notes-prose li {
+  @apply relative pl-6 text-ink-700 dark:text-ink-200 leading-7;
+}
+.notes-prose li::before {
+  content: "";
+  @apply absolute left-1 top-[0.7rem] h-1.5 w-1.5 rounded-full bg-brand-500;
+}
+.notes-prose mark {
+  @apply bg-amber-100 text-ink-900 px-0.5 rounded dark:bg-amber-300/30 dark:text-amber-100;
+}
+
+/* Highlight in search snippets */
+mark {
+  @apply bg-amber-100 text-ink-900 px-0.5 rounded dark:bg-amber-300/30 dark:text-amber-100;
+}
+
+.prose-tight p {
+  margin: 0.4rem 0;
+}
