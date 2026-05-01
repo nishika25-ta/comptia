@@ -3,6 +3,15 @@ import type { AttemptResult, ExamSession } from "../types";
 const ATTEMPTS_KEY = "secplus.attempts.v1";
 const SESSION_KEY = "secplus.examSession.v1";
 const HISTORY_KEY = "secplus.examHistory.v1";
+const VISITED_LESSONS_KEY = "secplus.visitedLessons.v1";
+
+/** All localStorage keys that hold user progress (used by sync). */
+export const ALL_PROGRESS_KEYS = [
+  ATTEMPTS_KEY,
+  SESSION_KEY,
+  HISTORY_KEY,
+  VISITED_LESSONS_KEY,
+] as const;
 
 export function loadAttempts(): AttemptResult[] {
   try {
@@ -81,6 +90,39 @@ export function pushExamHistory(session: ExamSession) {
 export function clearExamHistory() {
   try {
     localStorage.removeItem(HISTORY_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+// ── Lesson visit tracking ────────────────────────────────────────────────────
+
+export function loadVisitedLessons(): Set<number> {
+  try {
+    const raw = localStorage.getItem(VISITED_LESSONS_KEY);
+    return raw ? new Set(JSON.parse(raw) as number[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function markLessonVisited(lessonId: number) {
+  const visited = loadVisitedLessons();
+  if (visited.has(lessonId)) return; // already tracked
+  visited.add(lessonId);
+  try {
+    localStorage.setItem(
+      VISITED_LESSONS_KEY,
+      JSON.stringify([...visited])
+    );
+  } catch {
+    // ignore
+  }
+}
+
+export function clearVisitedLessons() {
+  try {
+    localStorage.removeItem(VISITED_LESSONS_KEY);
   } catch {
     // ignore
   }

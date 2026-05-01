@@ -6,6 +6,7 @@ import {
   getLesson,
   lessonReadingMinutes,
 } from "../lib/notes";
+import { markLessonVisited } from "../lib/storage";
 import { BlockRenderer, extractHeadings } from "../components/BlockRenderer";
 import { Icon } from "../components/Icon";
 
@@ -26,6 +27,11 @@ export default function LessonPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [topicId, lessonId]);
+
+  // Mark lesson visited for progress tracking.
+  useEffect(() => {
+    if (lesson) markLessonVisited(lesson.id);
+  }, [lesson]);
 
   // Reading-progress bar.
   useEffect(() => {

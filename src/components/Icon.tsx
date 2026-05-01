@@ -32,7 +32,11 @@ type IconName =
   | "pause"
   | "external"
   | "github"
-  | "list-bullet";
+  | "list-bullet"
+  | "sync"
+  | "upload"
+  | "download"
+  | "copy";
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   name: IconName;
@@ -214,6 +218,32 @@ const PATHS: Record<IconName, ReactElement> = {
       <circle cx="4" cy="12" r="1.5" />
       <circle cx="4" cy="18" r="1.5" />
       <path d="M9 6h12M9 12h12M9 18h12" />
+    </>
+  ),
+  sync: (
+    <>
+      <path d="M21 12a9 9 0 0 1-15.7 6.1M3 12a9 9 0 0 1 15.7-6.1" />
+      <path d="M3 7v5h5M21 17v-5h-5" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </>
   ),
 };

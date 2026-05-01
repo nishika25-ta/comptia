@@ -14,11 +14,13 @@ import {
   loadExamHistory,
 } from "../lib/storage";
 import QuestionCard from "../components/QuestionCard";
+import SyncModal from "../components/SyncModal";
 import type { Question } from "../types";
 import { Icon } from "../components/Icon";
 
 export default function ProgressPage() {
   const [tick, setTick] = useState(0);
+  const [showSync, setShowSync] = useState(false);
   const attempts = useMemo(() => loadAttempts(), [tick]);
   const history = useMemo(() => loadExamHistory(), [tick]);
   const { perQuestion } = useMemo(() => aggregateStats(attempts), [attempts]);
@@ -64,6 +66,7 @@ export default function ProgressPage() {
   }
 
   return (
+    <>
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -79,6 +82,12 @@ export default function ProgressPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowSync(true)}
+            className="btn-outline text-sm inline-flex items-center gap-1.5"
+          >
+            <Icon name="sync" size={14} /> Sync devices
+          </button>
           <button
             onClick={() => {
               if (
@@ -317,6 +326,16 @@ export default function ProgressPage() {
         </section>
       )}
     </div>
+    {showSync && (
+      <SyncModal
+        onClose={() => setShowSync(false)}
+        onDone={() => {
+          setShowSync(false);
+          refresh();
+        }}
+      />
+    )}
+    </>
   );
 }
 
