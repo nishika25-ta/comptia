@@ -103,40 +103,46 @@ export default function CheatSheet() {
 
           {/* Entries */}
           <div className="px-4 pb-5 space-y-4">
-            {(search ? filtered : [filtered[activeTab]].filter(Boolean)).map((sec) => {
-              if (!sec) return null;
-              const c = COLORS[sec.color] ?? COLORS.brand;
-              return (
-                <div key={sec.title}>
-                  {search && (
-                    <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg mb-2 ${c.chip}`}>
-                      {sec.title}
+            {(search ? filtered : [filtered[activeTab]].filter(Boolean)).length === 0 ? (
+              <div className="text-center py-8 text-ink-500 dark:text-ink-400 text-sm">
+                No concepts match <span className="font-semibold text-ink-700 dark:text-ink-200">"{search}"</span>. Try a shorter keyword.
+              </div>
+            ) : (
+              (search ? filtered : [filtered[activeTab]].filter(Boolean)).map((sec) => {
+                if (!sec) return null;
+                const c = COLORS[sec.color] ?? COLORS.brand;
+                return (
+                  <div key={sec.title}>
+                    {search && (
+                      <div className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg mb-2 ${c.chip}`}>
+                        {sec.title}
+                      </div>
+                    )}
+                    <div className={`rounded-xl border ${c.border} overflow-hidden`}>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          {sec.entries.map((entry, i) => (
+                            <tr
+                              key={entry.term}
+                              className={`${i % 2 === 0 ? "bg-white dark:bg-ink-900" : "bg-ink-50/60 dark:bg-ink-800/40"} border-t border-ink-100 dark:border-ink-800 first:border-t-0`}
+                            >
+                              <td className="py-2.5 px-3 align-top w-[30%] min-w-[120px]">
+                                <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md ${c.chip}`}>
+                                  {entry.term}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-xs text-ink-700 dark:text-ink-200 leading-relaxed">
+                                {entry.def}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  )}
-                  <div className={`rounded-xl border ${c.border} overflow-hidden`}>
-                    <table className="w-full text-sm">
-                      <tbody>
-                        {sec.entries.map((entry, i) => (
-                          <tr
-                            key={entry.term}
-                            className={`${i % 2 === 0 ? "bg-white dark:bg-ink-900" : "bg-ink-50/60 dark:bg-ink-800/40"} border-t border-ink-100 dark:border-ink-800 first:border-t-0`}
-                          >
-                            <td className="py-2.5 px-3 align-top w-[30%] min-w-[120px]">
-                              <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-md ${c.chip}`}>
-                                {entry.term}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 text-xs text-ink-700 dark:text-ink-200 leading-relaxed">
-                              {entry.def}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}

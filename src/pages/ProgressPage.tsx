@@ -81,7 +81,7 @@ export default function ProgressPage() {
             attempts.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowSync(true)}
             className="btn-outline text-sm inline-flex items-center gap-1.5"

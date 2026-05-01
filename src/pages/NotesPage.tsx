@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   GLOSSARY,
@@ -80,8 +80,18 @@ export default function NotesPage() {
   const [tipsOpen, setTipsOpen] = useState(false);
   const results = useMemo(() => searchNotes(query, 30), [query]);
 
-  // Progress tracking ─────────────────────────────────────────────────────────
-  const visitedLessons = useMemo(() => loadVisitedLessons(), []);
+  // Progress tracking — refreshes when user returns from a lesson page.
+  const [visitedLessons, setVisitedLessons] = useState(() => loadVisitedLessons());
+  useEffect(() => {
+    function refresh() { setVisitedLessons(loadVisitedLessons()); }
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
   const totalLessons = LESSONS.length;
   const visitedCount = visitedLessons.size;
   const visitedPct = totalLessons > 0 ? (visitedCount / totalLessons) * 100 : 0;

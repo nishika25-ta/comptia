@@ -95,7 +95,8 @@ export default function SyncModal({ onClose, onDone }: Props) {
     try {
       importSyncCode(importText, importMode);
       setImportSuccess(true);
-      onDone();
+      // Give the user 1.5 s to see the success message before closing.
+      setTimeout(() => onDone(), 1500);
     } catch {
       setImportError(
         "Invalid sync code. Make sure you pasted the full code exactly as generated."
