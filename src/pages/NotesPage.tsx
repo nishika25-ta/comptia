@@ -10,6 +10,7 @@ import {
 } from "../lib/notes";
 import { loadVisitedLessons } from "../lib/storage";
 import { Icon } from "../components/Icon";
+import CheatSheet from "../components/CheatSheet";
 
 // ── Exam tips data ────────────────────────────────────────────────────────────
 const EXAM_TIPS = [
@@ -225,6 +226,9 @@ export default function NotesPage() {
           </div>
         )}
       </section>
+
+      {/* ── Cheat Sheet ────────────────────────────────────────────────── */}
+      <CheatSheet />
 
       {/* ── Exam Tips ──────────────────────────────────────────────────────── */}
       <section className="card overflow-hidden">
