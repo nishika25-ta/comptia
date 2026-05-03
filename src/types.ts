@@ -1,3 +1,6 @@
+/** Study material set: official SY0-701 pack + Student Guide vs. supplemental guide PDF. */
+export type ContentVersion = "v1" | "v2";
+
 export interface Question {
   id: number;
   category: string;

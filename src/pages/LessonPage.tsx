@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  LESSONS,
   blocksToText,
   getLesson,
+  getLessons,
   lessonReadingMinutes,
 } from "../lib/notes";
 import { markLessonVisited } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import { BlockRenderer, extractHeadings } from "../components/BlockRenderer";
+import V2StudyTopic from "../components/V2StudyTopic";
 import { Icon } from "../components/Icon";
 
 export default function LessonPage() {
+  const { version } = useContentVersion();
   const { lessonId, topicId } = useParams<{
     lessonId: string;
     topicId?: string;
   }>();
-  const lesson = useMemo(() => getLesson(lessonId || ""), [lessonId]);
+  const LESSONS = useMemo(() => getLessons(version), [version]);
+  const lesson = useMemo(
+    () => getLesson(version, lessonId || ""),
+    [version, lessonId]
+  );
   const targetRef = useRef<HTMLElement | null>(null);
   const articleRef = useRef<HTMLDivElement | null>(null);
   const [progress, setProgress] = useState(0);
@@ -30,8 +37,8 @@ export default function LessonPage() {
 
   // Mark lesson visited for progress tracking.
   useEffect(() => {
-    if (lesson) markLessonVisited(lesson.id);
-  }, [lesson]);
+    if (lesson) markLessonVisited(version, lesson.id);
+  }, [lesson, version]);
 
   // Reading-progress bar.
   useEffect(() => {
@@ -171,7 +178,14 @@ export default function LessonPage() {
       <article ref={articleRef} className="space-y-8 max-w-3xl">
         <header>
           <div className="inline-flex items-center gap-2 chip bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200 mb-3">
-            <Icon name="book" size={14} /> Lesson {lesson.id}
+            <Icon name="book" size={14} />{" "}
+            {version === "v2" ? (
+              <>
+                Study pack · Lesson {lesson.id}
+              </>
+            ) : (
+              <>Lesson {lesson.id}</>
+            )}
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50 leading-tight">
             {lesson.title}
@@ -187,7 +201,14 @@ export default function LessonPage() {
         </header>
 
         {lesson.introBlocks.length > 0 && (
-          <section id="intro" className="card p-6 md:p-8 scroll-mt-24">
+          <section
+            id="intro"
+            className={
+              version === "v2"
+                ? "rounded-2xl border border-ink-200/80 dark:border-ink-700/80 bg-gradient-to-r from-accent-50/40 via-white to-brand-50/35 dark:from-accent-950/25 dark:via-ink-900 dark:to-brand-950/20 p-6 md:p-8 scroll-mt-24 shadow-sm"
+                : "card p-6 md:p-8 scroll-mt-24"
+            }
+          >
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-3">
               <Icon name="info" size={16} /> Introduction
             </div>
@@ -217,20 +238,39 @@ export default function LessonPage() {
                     }
                   : undefined
               }
-              className={`card p-6 md:p-8 scroll-mt-24 transition ${
-                isTarget
-                  ? "ring-2 ring-brand-300/60 dark:ring-brand-600/60 border-brand-300 dark:border-brand-700"
-                  : ""
+              className={`scroll-mt-24 transition ${
+                version === "v2"
+                  ? `rounded-2xl border border-ink-200/70 dark:border-ink-700/70 bg-white/90 dark:bg-ink-900/40 p-6 md:p-8 shadow-card ${
+                      isTarget
+                        ? "ring-2 ring-brand-400/50 dark:ring-brand-500/40 border-brand-300/80 dark:border-brand-600/50"
+                        : ""
+                    }`
+                  : `card p-6 md:p-8 ${
+                      isTarget
+                        ? "ring-2 ring-brand-300/60 dark:ring-brand-600/60 border-brand-300 dark:border-brand-700"
+                        : ""
+                    }`
               }`}
             >
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300 mb-1.5">
-                <Icon name="target" size={14} />
-                Topic {t.id}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">
+                  <Icon name="target" size={14} />
+                  Topic {t.id}
+                </span>
+                {version === "v2" && (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200">
+                    Q&A format
+                  </span>
+                )}
               </div>
-              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight text-ink-900 dark:text-ink-50 mb-4">
+              <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight text-ink-900 dark:text-ink-50 mb-6">
                 {t.title}
               </h2>
-              <BlockRenderer blocks={t.blocks} headingIdPrefix={t.id} />
+              {version === "v2" ? (
+                <V2StudyTopic blocks={t.blocks} headingIdPrefix={t.id} />
+              ) : (
+                <BlockRenderer blocks={t.blocks} headingIdPrefix={t.id} />
+              )}
             </section>
           );
         })}

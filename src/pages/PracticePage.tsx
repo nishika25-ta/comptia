@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ALL_CATEGORIES,
-  CATEGORY_COUNTS,
-  VALID_QUESTIONS,
+  getCategories,
+  getCategoryCounts,
+  getValidQuestions,
   isAnswerCorrect,
   shuffle,
 } from "../lib/questions";
 import { aggregateStats, loadAttempts, saveAttempt } from "../lib/storage";
+import {
+  readStoredContentVersion,
+  useContentVersion,
+} from "../lib/contentVersion";
+import type { ContentVersion } from "../types";
 import QuestionCard from "../components/QuestionCard";
 import { Icon } from "../components/Icon";
 
 type FilterMode = "all" | "category" | "missed" | "unseen";
 type Order = "sequential" | "random";
-
-const SETTINGS_KEY = "secplus.practice.settings.v1";
 
 interface Settings {
   filter: FilterMode;
@@ -21,35 +24,65 @@ interface Settings {
   order: Order;
 }
 
-function loadSettings(): Settings {
+function settingsStorageKey(v: ContentVersion) {
+  return `secplus.practice.settings.${v}`;
+}
+
+function loadSettings(v: ContentVersion, categories: string[]): Settings {
+  const fallback: Settings = {
+    filter: "all",
+    category: categories[0] || "",
+    order: "sequential",
+  };
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw
-      ? (JSON.parse(raw) as Settings)
-      : {
-          filter: "all",
-          category: ALL_CATEGORIES[0] || "",
-          order: "sequential",
-        };
-  } catch {
+    const raw = localStorage.getItem(settingsStorageKey(v));
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<Settings>;
+    const cat =
+      parsed.category && categories.includes(parsed.category)
+        ? parsed.category
+        : categories[0] || "";
     return {
-      filter: "all",
-      category: ALL_CATEGORIES[0] || "",
-      order: "sequential",
+      filter: parsed.filter ?? fallback.filter,
+      category: cat,
+      order: parsed.order ?? fallback.order,
     };
+  } catch {
+    return fallback;
   }
 }
 
-function saveSettings(s: Settings) {
+function saveSettings(v: ContentVersion, s: Settings) {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    localStorage.setItem(settingsStorageKey(v), JSON.stringify(s));
   } catch {
     /* ignore */
   }
 }
 
 export default function PracticePage() {
-  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const { version } = useContentVersion();
+  const ALL_CATEGORIES = useMemo(() => getCategories(version), [version]);
+  const CATEGORY_COUNTS = useMemo(
+    () => getCategoryCounts(version),
+    [version]
+  );
+  const VALID_QUESTIONS = useMemo(
+    () => getValidQuestions(version),
+    [version]
+  );
+
+  const [settings, setSettings] = useState<Settings>(() =>
+    loadSettings(
+      readStoredContentVersion(),
+      getCategories(readStoredContentVersion())
+    )
+  );
+
+  useEffect(() => {
+    setSettings(loadSettings(version, ALL_CATEGORIES));
+  }, [version, ALL_CATEGORIES]);
+
   const [pool, setPool] = useState<number[]>([]);
   const [cursor, setCursor] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -60,11 +93,11 @@ export default function PracticePage() {
   const [sessionWrong, setSessionWrong] = useState(0);
 
   useEffect(() => {
-    saveSettings(settings);
-  }, [settings]);
+    saveSettings(version, settings);
+  }, [version, settings]);
 
   useEffect(() => {
-    const attempts = loadAttempts();
+    const attempts = loadAttempts(version);
     const { perQuestion } = aggregateStats(attempts);
 
     let qs = VALID_QUESTIONS.slice();
@@ -85,7 +118,14 @@ export default function PracticePage() {
     setCursor(0);
     setSelected([]);
     setSubmitted(false);
-  }, [settings.filter, settings.category, settings.order, tick]);
+  }, [
+    version,
+    VALID_QUESTIONS,
+    settings.filter,
+    settings.category,
+    settings.order,
+    tick,
+  ]);
 
   const currentId = pool[cursor];
   const currentQuestion = useMemo(
@@ -97,7 +137,7 @@ export default function PracticePage() {
     if (!currentQuestion || submitted) return;
     if (selected.length === 0) return;
     const correct = isAnswerCorrect(currentQuestion, selected);
-    saveAttempt({
+    saveAttempt(version, {
       questionId: currentQuestion.id,
       selected: [...selected].sort(),
       correct,
@@ -167,7 +207,8 @@ export default function PracticePage() {
       <div className="flex flex-wrap items-end gap-3 justify-between">
         <div>
           <div className="inline-flex items-center gap-2 chip bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 mb-2">
-            <Icon name="practice" size={14} /> Practice mode
+            <Icon name="practice" size={14} /> Practice ·{" "}
+            {version === "v1" ? "Version 1" : "Version 2"}
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">
             Practice with instant feedback

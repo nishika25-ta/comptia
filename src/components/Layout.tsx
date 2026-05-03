@@ -2,6 +2,8 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { ThemeToggle } from "./ThemeToggle";
+import { useContentVersion } from "../lib/contentVersion";
+import type { ContentVersion } from "../types";
 
 const NAV = [
   { to: "/", label: "Home", icon: "home" as const, end: true },
@@ -11,6 +13,36 @@ const NAV = [
   { to: "/glossary", label: "Glossary", icon: "glossary" as const },
   { to: "/progress", label: "Progress", icon: "progress" as const },
 ];
+
+function MaterialVersionToggle() {
+  const { version, setVersion } = useContentVersion();
+  const choices: { id: ContentVersion; label: string }[] = [
+    { id: "v1", label: "Version 1" },
+    { id: "v2", label: "Version 2" },
+  ];
+  return (
+    <div
+      className="flex rounded-xl border border-ink-200 dark:border-ink-700 bg-ink-50/80 dark:bg-ink-900/50 p-0.5 shrink-0"
+      role="group"
+      aria-label="Study material version"
+    >
+      {choices.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          onClick={() => setVersion(c.id)}
+          className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${
+            version === c.id
+              ? "bg-white dark:bg-ink-800 text-brand-700 dark:text-brand-200 shadow-sm"
+              : "text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-ink-200"
+          }`}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function Layout({ children }: { children?: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -38,27 +70,34 @@ export default function Layout({ children }: { children?: ReactNode }) {
             </div>
           </Link>
 
-          <nav className="ml-auto hidden md:flex items-center gap-1">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
-                      : "text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-ink-50"
-                  }`
-                }
-              >
-                <Icon name={item.icon} size={16} />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+          <div className="hidden md:flex flex-1 items-center justify-end gap-3 min-w-0">
+            <MaterialVersionToggle />
+            <nav className="flex items-center gap-1 flex-wrap justify-end">
+              {NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                        : "text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-ink-50"
+                    }`
+                  }
+                >
+                  <Icon name={item.icon} size={16} />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
 
-          <div className="ml-auto md:ml-0 flex items-center gap-0.5 sm:gap-1">
+          <div className="flex md:hidden items-center gap-1 shrink-0">
+            <MaterialVersionToggle />
+          </div>
+
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto md:ml-0">
             <ThemeToggle />
             <button
               type="button"

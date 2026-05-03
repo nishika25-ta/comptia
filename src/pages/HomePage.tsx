@@ -1,12 +1,14 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
-  ALL_CATEGORIES,
-  CATEGORY_COUNTS,
-  PBQ_QUESTIONS,
-  VALID_QUESTIONS,
+  getCategories,
+  getCategoryCounts,
+  getPbqQuestions,
+  getValidQuestions,
 } from "../lib/questions";
-import { GLOSSARY, LESSONS } from "../lib/notes";
+import { getGlossary, getLessons } from "../lib/notes";
 import { loadAttempts, loadExamHistory } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import { Icon } from "../components/Icon";
 
 const Stat = ({
@@ -53,8 +55,19 @@ const Stat = ({
 };
 
 export default function HomePage() {
-  const attempts = loadAttempts();
-  const history = loadExamHistory();
+  const { version } = useContentVersion();
+  const VALID_QUESTIONS = useMemo(() => getValidQuestions(version), [version]);
+  const PBQ_QUESTIONS = useMemo(() => getPbqQuestions(version), [version]);
+  const ALL_CATEGORIES = useMemo(() => getCategories(version), [version]);
+  const CATEGORY_COUNTS = useMemo(
+    () => getCategoryCounts(version),
+    [version]
+  );
+  const LESSONS = useMemo(() => getLessons(version), [version]);
+  const GLOSSARY = useMemo(() => getGlossary(version), [version]);
+
+  const attempts = useMemo(() => loadAttempts(version), [version]);
+  const history = useMemo(() => loadExamHistory(version), [version]);
   const totalTopics = LESSONS.reduce((a, l) => a + l.topics.length, 0);
 
   return (
@@ -70,7 +83,8 @@ export default function HomePage() {
         />
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 chip bg-brand-100/70 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200 mb-3">
-            <Icon name="shield" size={14} /> CompTIA Security+ · SY0-701
+            <Icon name="shield" size={14} /> CompTIA Security+ · SY0-701 ·{" "}
+            {version === "v1" ? "Version 1" : "Version 2"}
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-ink-900 dark:text-ink-50 leading-tight">
             Master the Security+ exam,
@@ -86,7 +100,9 @@ export default function HomePage() {
             </span>{" "}
             across all SY0-701 domains, then deepen your knowledge with the{" "}
             <span className="font-semibold text-ink-900 dark:text-ink-50">
-              complete Student Guide
+              {version === "v1"
+                ? "complete Student Guide"
+                : "supplemental study notes from your Version 2 PDF"}
             </span>{" "}
             and a{" "}
             <span className="font-semibold text-ink-900 dark:text-ink-50">
@@ -196,8 +212,9 @@ export default function HomePage() {
             Study Notes
           </h3>
           <p className="text-sm text-ink-600 dark:text-ink-300 mt-1.5 leading-6">
-            All 16 lessons of the Official Student Guide — now with sub-headings,
-            bulleted lists, and inline objectives for easy skimming.
+            {version === "v1"
+              ? "All 16 lessons of the Official Student Guide — now with sub-headings, bulleted lists, and inline objectives for easy skimming."
+              : "Question explanations and topics from your Version 2 material, organised like Version 1 for the same study workflow."}
           </p>
           <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-300">
             Open notes <Icon name="arrow-right" size={14} />
@@ -215,37 +232,41 @@ export default function HomePage() {
             {VALID_QUESTIONS.length} total
           </span>
         </div>
-        <div className="card overflow-hidden hidden md:block">
+        <div className="card overflow-hidden hidden md:block rounded-2xl">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 dark:bg-ink-900/60 text-ink-600 dark:text-ink-300">
+            <thead className="bg-ink-50 dark:bg-ink-900/60 text-ink-500 dark:text-ink-400">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold">Domain</th>
-                <th className="text-right px-4 py-3 font-semibold w-28">
+                <th className="text-left px-4 py-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Domain
+                </th>
+                <th className="text-right px-4 py-3.5 font-semibold text-xs uppercase tracking-wider w-32">
                   Questions
                 </th>
-                <th className="px-4 py-3 font-semibold">Share</th>
+                <th className="px-4 py-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Share
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-ink-800 dark:text-ink-100">
               {ALL_CATEGORIES.map((c) => {
                 const n = CATEGORY_COUNTS[c] || 0;
                 const share = (n / VALID_QUESTIONS.length) * 100;
                 return (
                   <tr
                     key={c}
-                    className="border-t border-ink-100 dark:border-ink-800"
+                    className="border-t border-ink-100 dark:border-ink-800 first:border-t-0"
                   >
-                    <td className="px-4 py-3 text-ink-800 dark:text-ink-100 font-medium">
+                    <td className="px-4 py-3.5 font-medium leading-snug">
                       {c}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-ink-700 dark:text-ink-200">
+                    <td className="px-4 py-3.5 text-right tabular-nums text-ink-700 dark:text-ink-200 font-medium">
                       {n}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="h-2 bg-ink-100 dark:bg-ink-800 rounded-full overflow-hidden">
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="h-2.5 bg-ink-100 dark:bg-ink-800 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-brand-500 to-accent-500"
-                          style={{ width: `${share}%` }}
+                          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500 min-w-[2px]"
+                          style={{ width: `${Math.max(share, n > 0 ? 2 : 0)}%` }}
                         />
                       </div>
                     </td>
@@ -260,19 +281,19 @@ export default function HomePage() {
             const n = CATEGORY_COUNTS[c] || 0;
             const share = (n / VALID_QUESTIONS.length) * 100;
             return (
-              <div key={c} className="card p-3">
+              <div key={c} className="card p-3.5 rounded-2xl">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-medium text-ink-800 dark:text-ink-100 leading-tight">
+                  <div className="text-sm font-medium text-ink-800 dark:text-ink-100 leading-snug">
                     {c}
                   </div>
-                  <div className="text-sm tabular-nums text-ink-600 dark:text-ink-300">
+                  <div className="text-sm tabular-nums text-ink-600 dark:text-ink-300 font-medium">
                     {n}
                   </div>
                 </div>
-                <div className="h-2 bg-ink-100 dark:bg-ink-800 rounded-full mt-2 overflow-hidden">
+                <div className="h-2.5 bg-ink-100 dark:bg-ink-800 rounded-full mt-2.5 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-brand-500 to-accent-500"
-                    style={{ width: `${share}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500 min-w-[2px]"
+                    style={{ width: `${Math.max(share, n > 0 ? 2 : 0)}%` }}
                   />
                 </div>
               </div>

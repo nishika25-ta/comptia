@@ -1,28 +1,47 @@
-import questionsData from "../data/questions.json";
-import type { Question } from "../types";
+import questionsV1 from "../data/questions.json";
+import questionsV2 from "../data/questions2.json";
+import { sortExamDomains } from "./examDomains";
+import type { ContentVersion, Question } from "../types";
 
-const ALL_QUESTIONS = questionsData as Question[];
+const POOLS: Record<ContentVersion, Question[]> = {
+  v1: questionsV1 as Question[],
+  v2: questionsV2 as Question[],
+};
 
-export const VALID_QUESTIONS: Question[] = ALL_QUESTIONS.filter(
-  (q) => !q.error && Array.isArray(q.options) && q.options.length >= 2
-);
+export function getAllQuestions(version: ContentVersion): Question[] {
+  return POOLS[version];
+}
 
-export const PBQ_QUESTIONS: Question[] = ALL_QUESTIONS.filter((q) => !!q.error);
+export function getValidQuestions(version: ContentVersion): Question[] {
+  return POOLS[version].filter(
+    (q) => !q.error && Array.isArray(q.options) && q.options.length >= 2
+  );
+}
 
-export const ALL_CATEGORIES = Array.from(
-  new Set(VALID_QUESTIONS.map((q) => q.category).filter(Boolean))
-).sort();
+export function getPbqQuestions(version: ContentVersion): Question[] {
+  return POOLS[version].filter((q) => !!q.error);
+}
 
-export const CATEGORY_COUNTS: Record<string, number> = VALID_QUESTIONS.reduce(
-  (acc, q) => {
+export function getCategories(version: ContentVersion): string[] {
+  const valid = getValidQuestions(version);
+  const unique = Array.from(
+    new Set(valid.map((q) => q.category).filter(Boolean))
+  );
+  return sortExamDomains(unique);
+}
+
+export function getCategoryCounts(version: ContentVersion): Record<string, number> {
+  return getValidQuestions(version).reduce((acc, q) => {
     acc[q.category] = (acc[q.category] || 0) + 1;
     return acc;
-  },
-  {} as Record<string, number>
-);
+  }, {} as Record<string, number>);
+}
 
-export function getById(id: number): Question | undefined {
-  return ALL_QUESTIONS.find((q) => q.id === id);
+export function getQuestionById(
+  version: ContentVersion,
+  id: number
+): Question | undefined {
+  return POOLS[version].find((q) => q.id === id);
 }
 
 export function isAnswerCorrect(q: Question, selected: string[]): boolean {
@@ -54,6 +73,6 @@ export function indexToLetter(idx: number): string {
   return String.fromCharCode("A".charCodeAt(0) + idx);
 }
 
-export function totalQuestionCount(): number {
-  return ALL_QUESTIONS.length;
+export function totalQuestionCount(version: ContentVersion): number {
+  return POOLS[version].length;
 }

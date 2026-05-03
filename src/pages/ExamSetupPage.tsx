@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ALL_CATEGORIES,
-  CATEGORY_COUNTS,
-  VALID_QUESTIONS,
+  getCategories,
+  getCategoryCounts,
+  getValidQuestions,
   pickRandom,
 } from "../lib/questions";
 import {
@@ -12,6 +12,7 @@ import {
   loadExamSession,
   saveExamSession,
 } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import type { ExamSession } from "../types";
 import { Icon } from "../components/Icon";
 
@@ -24,11 +25,19 @@ const PRESETS = [
 
 export default function ExamSetupPage() {
   const navigate = useNavigate();
+  const { version } = useContentVersion();
+  const VALID_QUESTIONS = useMemo(() => getValidQuestions(version), [version]);
+  const ALL_CATEGORIES = useMemo(() => getCategories(version), [version]);
+  const CATEGORY_COUNTS = useMemo(
+    () => getCategoryCounts(version),
+    [version]
+  );
+
   const [count, setCount] = useState(90);
   const [minutes, setMinutes] = useState(90);
   const [domains, setDomains] = useState<string[]>([]);
-  const inProgress = loadExamSession();
-  const history = loadExamHistory();
+  const inProgress = loadExamSession(version);
+  const history = loadExamHistory(version);
 
   function startExam() {
     const pool = domains.length
@@ -43,7 +52,7 @@ export default function ExamSetupPage() {
       answers: {},
       flagged: [],
     };
-    saveExamSession(session);
+    saveExamSession(version, session);
     navigate("/exam/run");
   }
 
@@ -57,7 +66,7 @@ export default function ExamSetupPage() {
         "Discard the in-progress exam? Your answers so far will be deleted."
       )
     ) {
-      clearExamSession();
+      clearExamSession(version);
       navigate("/exam");
       window.location.reload();
     }
@@ -82,7 +91,8 @@ export default function ExamSetupPage() {
     <div className="space-y-6 max-w-3xl mx-auto animate-fade-in">
       <div>
         <div className="inline-flex items-center gap-2 chip bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 mb-2">
-          <Icon name="timer" size={14} /> Exam mode
+          <Icon name="timer" size={14} /> Exam ·{" "}
+          {version === "v1" ? "Version 1" : "Version 2"}
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">
           Take a timed mock exam

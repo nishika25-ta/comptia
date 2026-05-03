@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  GLOSSARY,
-  LESSONS,
   blocksToText,
+  getGlossary,
+  getLessons,
   highlight,
   lessonReadingMinutes,
   searchNotes,
 } from "../lib/notes";
 import { loadVisitedLessons } from "../lib/storage";
+import {
+  readStoredContentVersion,
+  useContentVersion,
+} from "../lib/contentVersion";
 import { Icon } from "../components/Icon";
 import CheatSheet from "../components/CheatSheet";
 
@@ -76,21 +80,36 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default function NotesPage() {
+  const { version } = useContentVersion();
+  const LESSONS = useMemo(() => getLessons(version), [version]);
+  const GLOSSARY = useMemo(() => getGlossary(version), [version]);
+
   const [query, setQuery] = useState("");
   const [tipsOpen, setTipsOpen] = useState(false);
-  const results = useMemo(() => searchNotes(query, 30), [query]);
+  const results = useMemo(
+    () => searchNotes(version, query, 30),
+    [version, query]
+  );
 
   // Progress tracking — refreshes when user returns from a lesson page.
-  const [visitedLessons, setVisitedLessons] = useState(() => loadVisitedLessons());
+  const [visitedLessons, setVisitedLessons] = useState(() =>
+    loadVisitedLessons(readStoredContentVersion())
+  );
   useEffect(() => {
-    function refresh() { setVisitedLessons(loadVisitedLessons()); }
+    setVisitedLessons(loadVisitedLessons(version));
+  }, [version]);
+
+  useEffect(() => {
+    function refresh() {
+      setVisitedLessons(loadVisitedLessons(version));
+    }
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, []);
+  }, [version]);
 
   const totalLessons = LESSONS.length;
   const visitedCount = visitedLessons.size;
@@ -127,16 +146,16 @@ export default function NotesPage() {
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 chip bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200 mb-2">
-            <Icon name="book" size={14} /> Study guide
+            <Icon name="book" size={14} /> Study guide ·{" "}
+            {version === "v1" ? "Version 1" : "Version 2"}
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">
             Study Notes
           </h1>
           <p className="mt-2 text-ink-600 dark:text-ink-300 max-w-2xl">
-            Complete coverage from the Official CompTIA Security+ Student Guide,
-            now reorganised with sub-headings, bulleted definitions and inline
-            objectives. Browse by lesson, or search across every topic and the
-            glossary.
+            {version === "v1"
+              ? "Complete coverage from the Official CompTIA Security+ Student Guide, now reorganised with sub-headings, bulleted definitions and inline objectives. Browse by lesson, or search across every topic and the glossary."
+              : "Explanations from your Version 2 material are laid out as crisp scenario cards plus violet-highlighted takeaways—easier to skim before practice."}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 md:gap-4 text-center text-sm">
@@ -411,26 +430,45 @@ export default function NotesPage() {
             <Link
               key={l.id}
               to={`/notes/${l.id}`}
-              className="card card-hover p-4 md:p-5 group block relative"
+              className={
+                version === "v2"
+                  ? "relative overflow-hidden rounded-2xl border border-violet-200/65 dark:border-violet-800/40 bg-gradient-to-br from-white via-violet-50/30 to-brand-50/25 dark:from-ink-900 dark:via-violet-950/25 dark:to-brand-950/15 shadow-card card-hover p-4 md:p-5 group block"
+                  : "card card-hover p-4 md:p-5 group block relative"
+              }
             >
+              {version === "v2" && (
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 via-accent-500 to-brand-500 opacity-80"
+                  aria-hidden
+                />
+              )}
               {visited && (
-                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 grid place-items-center shadow-sm">
+                <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 grid place-items-center shadow-sm ring-2 ring-white dark:ring-ink-900">
                   <Icon name="check" size={11} className="text-white" strokeWidth={2.5} />
                 </div>
               )}
               <div className="flex items-start gap-3 md:gap-4">
                 <div
-                  className={`shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl grid place-items-center text-white font-display font-bold text-base md:text-lg shadow-sm ${
+                  className={`shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl grid place-items-center text-white font-display font-bold text-base md:text-lg shadow-md ring-2 ring-white/25 dark:ring-ink-900/40 ${
                     visited
                       ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
-                      : "bg-gradient-to-br from-brand-500 via-brand-600 to-accent-600"
+                      : version === "v2"
+                        ? "bg-gradient-to-br from-violet-500 via-brand-600 to-accent-600"
+                        : "bg-gradient-to-br from-brand-500 via-brand-600 to-accent-600"
                   }`}
                 >
                   {l.id}
                 </div>
                 <div className="flex-1 min-w-0 pr-6">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">
-                    Lesson {l.id}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">
+                      {version === "v2" ? "Study pack" : "Lesson"} {l.id}
+                    </span>
+                    {version === "v2" && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-200 dark:bg-violet-400/10">
+                        Scenario + explanation
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-display text-base md:text-lg font-semibold text-ink-900 dark:text-ink-50 group-hover:text-brand-600 dark:group-hover:text-brand-300 leading-snug">
                     {l.title}
@@ -454,13 +492,23 @@ export default function NotesPage() {
                     {(l.topics.length > 3 ? l.topics.slice(0, 3) : l.topics).map((t) => (
                       <span
                         key={t.id}
-                        className="chip bg-ink-100 text-ink-700 dark:bg-ink-800 dark:text-ink-200"
+                        className={
+                          version === "v2"
+                            ? "chip bg-violet-100/80 text-violet-900 dark:bg-violet-900/35 dark:text-violet-100 border border-violet-200/60 dark:border-violet-700/40"
+                            : "chip bg-ink-100 text-ink-700 dark:bg-ink-800 dark:text-ink-200"
+                        }
                       >
                         {t.id} · {t.title}
                       </span>
                     ))}
                     {l.topics.length > 3 && (
-                      <span className="chip bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300">
+                      <span
+                        className={
+                          version === "v2"
+                            ? "chip bg-ink-100/80 text-ink-600 dark:bg-ink-800 dark:text-ink-300"
+                            : "chip bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300"
+                        }
+                      >
                         +{l.topics.length - 3} more
                       </span>
                     )}

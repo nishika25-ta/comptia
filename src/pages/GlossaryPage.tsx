@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { GLOSSARY, highlight } from "../lib/notes";
+import { getGlossary, highlight } from "../lib/notes";
+import { useContentVersion } from "../lib/contentVersion";
 import { Icon } from "../components/Icon";
 
 export default function GlossaryPage() {
+  const { version } = useContentVersion();
+  const GLOSSARY = useMemo(() => getGlossary(version), [version]);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -13,7 +16,7 @@ export default function GlossaryPage() {
         e.term.toLowerCase().includes(q) ||
         e.definition.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, GLOSSARY]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof GLOSSARY>();
@@ -31,13 +34,18 @@ export default function GlossaryPage() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <div className="inline-flex items-center gap-2 chip bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200 mb-2">
-          <Icon name="glossary" size={14} /> Glossary
+          <Icon name="glossary" size={14} /> Glossary ·{" "}
+          {version === "v1" ? "Version 1" : "Version 2"}
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">
           Security+ glossary
         </h1>
         <p className="text-sm text-ink-600 dark:text-ink-300 mt-1">
-          {GLOSSARY.length} terms extracted from the Official Student Guide.
+          {version === "v1"
+            ? `${GLOSSARY.length} terms extracted from the Official Student Guide.`
+            : GLOSSARY.length > 0
+              ? `${GLOSSARY.length} terms for Version 2.`
+              : "No separate glossary file ships with Version 2 yet — use Study Notes search for definitions in explanations."}
         </p>
       </div>
 

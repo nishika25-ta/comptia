@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CHEAT_SECTIONS } from "../data/cheatsheet";
+import { CHEAT_SECTIONS_V2 } from "../data/cheatsheet2";
+import { useContentVersion } from "../lib/contentVersion";
 import { Icon } from "./Icon";
 
 const COLORS: Record<string, { chip: string; badge: string; border: string }> = {
@@ -17,22 +19,34 @@ const COLORS: Record<string, { chip: string; badge: string; border: string }> = 
 };
 
 export default function CheatSheet() {
+  const { version } = useContentVersion();
+  const CHEAT_SECTIONS_ACTIVE =
+    version === "v1" ? CHEAT_SECTIONS : CHEAT_SECTIONS_V2;
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState(0);
 
+  useEffect(() => {
+    setActiveTab(0);
+    setSearch("");
+  }, [version]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return CHEAT_SECTIONS;
-    return CHEAT_SECTIONS.map((sec) => ({
+    if (!q) return CHEAT_SECTIONS_ACTIVE;
+    return CHEAT_SECTIONS_ACTIVE.map((sec) => ({
       ...sec,
       entries: sec.entries.filter(
         (e) => e.term.toLowerCase().includes(q) || e.def.toLowerCase().includes(q)
       ),
     })).filter((sec) => sec.entries.length > 0);
-  }, [search]);
+  }, [search, CHEAT_SECTIONS_ACTIVE]);
 
-  const totalEntries = CHEAT_SECTIONS.reduce((a, s) => a + s.entries.length, 0);
+  const totalEntries = CHEAT_SECTIONS_ACTIVE.reduce(
+    (a, s) => a + s.entries.length,
+    0
+  );
 
   return (
     <section className="card overflow-hidden">
@@ -49,9 +63,16 @@ export default function CheatSheet() {
           <div>
             <div className="font-display font-semibold text-ink-900 dark:text-ink-50">
               Security+ Cheat Sheet
+              {version === "v2" && (
+                <span className="font-normal text-ink-500 dark:text-ink-400">
+                  {" "}
+                  (SY0-701 reference)
+                </span>
+              )}
             </div>
             <div className="text-xs text-ink-500 dark:text-ink-400">
-              {CHEAT_SECTIONS.length} domains · {totalEntries} must-know concepts
+              {CHEAT_SECTIONS_ACTIVE.length} domains · {totalEntries} must-know
+              concepts
             </div>
           </div>
         </div>
@@ -84,7 +105,7 @@ export default function CheatSheet() {
           {/* Domain tabs (hidden when searching) */}
           {!search && (
             <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto no-scrollbar">
-              {CHEAT_SECTIONS.map((sec, i) => {
+              {CHEAT_SECTIONS_ACTIVE.map((sec, i) => {
                 const c = COLORS[sec.color] ?? COLORS.brand;
                 return (
                   <button

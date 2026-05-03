@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
+import { ContentVersionProvider } from "./lib/contentVersion";
 import HomePage from "./pages/HomePage";
 import PracticePage from "./pages/PracticePage";
 import ExamSetupPage from "./pages/ExamSetupPage";
@@ -14,6 +15,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 function App() {
   return (
     <BrowserRouter>
+      <ContentVersionProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
@@ -29,6 +31,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
+      </ContentVersionProvider>
     </BrowserRouter>
   );
 }

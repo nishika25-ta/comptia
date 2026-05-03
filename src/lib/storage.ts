@@ -1,118 +1,127 @@
-import type { AttemptResult, ExamSession } from "../types";
+import type { AttemptResult, ContentVersion, ExamSession } from "../types";
 
-const ATTEMPTS_KEY = "secplus.attempts.v1";
-const SESSION_KEY = "secplus.examSession.v1";
-const HISTORY_KEY = "secplus.examHistory.v1";
-const VISITED_LESSONS_KEY = "secplus.visitedLessons.v1";
+export function progressKeys(version: ContentVersion) {
+  const suffix = version;
+  return {
+    attempts: `secplus.attempts.${suffix}`,
+    session: `secplus.examSession.${suffix}`,
+    history: `secplus.examHistory.${suffix}`,
+    visited: `secplus.visitedLessons.${suffix}`,
+  } as const;
+}
 
-/** All localStorage keys that hold user progress (used by sync). */
+/** All localStorage keys that hold user progress (used by sync), both material versions. */
 export const ALL_PROGRESS_KEYS = [
-  ATTEMPTS_KEY,
-  SESSION_KEY,
-  HISTORY_KEY,
-  VISITED_LESSONS_KEY,
+  ...Object.values(progressKeys("v1")),
+  ...Object.values(progressKeys("v2")),
 ] as const;
 
-export function loadAttempts(): AttemptResult[] {
+export function loadAttempts(version: ContentVersion): AttemptResult[] {
   try {
-    const raw = localStorage.getItem(ATTEMPTS_KEY);
+    const raw = localStorage.getItem(progressKeys(version).attempts);
     return raw ? (JSON.parse(raw) as AttemptResult[]) : [];
   } catch {
     return [];
   }
 }
 
-export function saveAttempt(result: AttemptResult) {
-  const attempts = loadAttempts();
+export function saveAttempt(version: ContentVersion, result: AttemptResult) {
+  const attempts = loadAttempts(version);
   attempts.push(result);
-  // Keep last 5000 attempts to avoid bloat
   const trimmed = attempts.slice(-5000);
   try {
-    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(
+      progressKeys(version).attempts,
+      JSON.stringify(trimmed)
+    );
   } catch {
     // ignore quota errors
   }
 }
 
-export function clearAttempts() {
+export function clearAttempts(version: ContentVersion) {
   try {
-    localStorage.removeItem(ATTEMPTS_KEY);
+    localStorage.removeItem(progressKeys(version).attempts);
   } catch {
     // ignore
   }
 }
 
-export function loadExamSession(): ExamSession | null {
+export function loadExamSession(version: ContentVersion): ExamSession | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(progressKeys(version).session);
     return raw ? (JSON.parse(raw) as ExamSession) : null;
   } catch {
     return null;
   }
 }
 
-export function saveExamSession(session: ExamSession) {
+export function saveExamSession(version: ContentVersion, session: ExamSession) {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(
+      progressKeys(version).session,
+      JSON.stringify(session)
+    );
   } catch {
     // ignore
   }
 }
 
-export function clearExamSession() {
+export function clearExamSession(version: ContentVersion) {
   try {
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(progressKeys(version).session);
   } catch {
     // ignore
   }
 }
 
-export function loadExamHistory(): ExamSession[] {
+export function loadExamHistory(version: ContentVersion): ExamSession[] {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
+    const raw = localStorage.getItem(progressKeys(version).history);
     return raw ? (JSON.parse(raw) as ExamSession[]) : [];
   } catch {
     return [];
   }
 }
 
-export function pushExamHistory(session: ExamSession) {
-  const history = loadExamHistory();
+export function pushExamHistory(version: ContentVersion, session: ExamSession) {
+  const history = loadExamHistory(version);
   history.unshift(session);
   const trimmed = history.slice(0, 50);
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(
+      progressKeys(version).history,
+      JSON.stringify(trimmed)
+    );
   } catch {
     // ignore
   }
 }
 
-export function clearExamHistory() {
+export function clearExamHistory(version: ContentVersion) {
   try {
-    localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem(progressKeys(version).history);
   } catch {
     // ignore
   }
 }
 
-// ── Lesson visit tracking ────────────────────────────────────────────────────
-
-export function loadVisitedLessons(): Set<number> {
+export function loadVisitedLessons(version: ContentVersion): Set<number> {
   try {
-    const raw = localStorage.getItem(VISITED_LESSONS_KEY);
+    const raw = localStorage.getItem(progressKeys(version).visited);
     return raw ? new Set(JSON.parse(raw) as number[]) : new Set();
   } catch {
     return new Set();
   }
 }
 
-export function markLessonVisited(lessonId: number) {
-  const visited = loadVisitedLessons();
-  if (visited.has(lessonId)) return; // already tracked
+export function markLessonVisited(version: ContentVersion, lessonId: number) {
+  const visited = loadVisitedLessons(version);
+  if (visited.has(lessonId)) return;
   visited.add(lessonId);
   try {
     localStorage.setItem(
-      VISITED_LESSONS_KEY,
+      progressKeys(version).visited,
       JSON.stringify([...visited])
     );
   } catch {
@@ -120,15 +129,14 @@ export function markLessonVisited(lessonId: number) {
   }
 }
 
-export function clearVisitedLessons() {
+export function clearVisitedLessons(version: ContentVersion) {
   try {
-    localStorage.removeItem(VISITED_LESSONS_KEY);
+    localStorage.removeItem(progressKeys(version).visited);
   } catch {
     // ignore
   }
 }
 
-/** Aggregate attempts to compute per-question and per-category stats. */
 export function aggregateStats(attempts: AttemptResult[]) {
   const perQuestion: Record<
     number,

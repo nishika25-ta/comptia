@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ALL_CATEGORIES,
-  CATEGORY_COUNTS,
-  VALID_QUESTIONS,
-  getById,
+  getCategories,
+  getCategoryCounts,
+  getQuestionById,
+  getValidQuestions,
 } from "../lib/questions";
 import {
   aggregateStats,
@@ -13,16 +13,25 @@ import {
   loadAttempts,
   loadExamHistory,
 } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import QuestionCard from "../components/QuestionCard";
 import SyncModal from "../components/SyncModal";
 import type { Question } from "../types";
 import { Icon } from "../components/Icon";
 
 export default function ProgressPage() {
+  const { version } = useContentVersion();
+  const VALID_QUESTIONS = useMemo(() => getValidQuestions(version), [version]);
+  const ALL_CATEGORIES = useMemo(() => getCategories(version), [version]);
+  const CATEGORY_COUNTS = useMemo(
+    () => getCategoryCounts(version),
+    [version]
+  );
+
   const [tick, setTick] = useState(0);
   const [showSync, setShowSync] = useState(false);
-  const attempts = useMemo(() => loadAttempts(), [tick]);
-  const history = useMemo(() => loadExamHistory(), [tick]);
+  const attempts = useMemo(() => loadAttempts(version), [tick, version]);
+  const history = useMemo(() => loadExamHistory(version), [tick, version]);
   const { perQuestion } = useMemo(() => aggregateStats(attempts), [attempts]);
   const [reviewIdx, setReviewIdx] = useState(0);
 
@@ -38,7 +47,7 @@ export default function ProgressPage() {
     return VALID_QUESTIONS.filter(
       (q) => perQuestion[q.id] && !perQuestion[q.id].lastCorrect
     );
-  }, [perQuestion]);
+  }, [perQuestion, VALID_QUESTIONS]);
 
   const categoryStats = useMemo(() => {
     const stats: Record<
@@ -49,7 +58,7 @@ export default function ProgressPage() {
       stats[c] = { seen: 0, correct: 0, total: CATEGORY_COUNTS[c] || 0 };
     }
     for (const id in perQuestion) {
-      const q = getById(parseInt(id, 10));
+      const q = getQuestionById(version, parseInt(id, 10));
       if (!q) continue;
       if (!stats[q.category])
         stats[q.category] = { seen: 0, correct: 0, total: 0 };
@@ -58,7 +67,7 @@ export default function ProgressPage() {
         stats[q.category].correct += 1;
     }
     return stats;
-  }, [perQuestion]);
+  }, [perQuestion, version, ALL_CATEGORIES]);
 
   function refresh() {
     setTick((t) => t + 1);
@@ -71,14 +80,15 @@ export default function ProgressPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-2 chip bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200 mb-2">
-            <Icon name="progress" size={14} /> Progress
+            <Icon name="progress" size={14} /> Progress ·{" "}
+            {version === "v1" ? "Version 1" : "Version 2"}
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-50">
             Your study dashboard
           </h1>
           <p className="text-sm text-ink-600 dark:text-ink-300 mt-1">
-            Tracked locally in your browser. Includes both Practice and Exam
-            attempts.
+            Tracked locally for the selected material version. Includes Practice
+            and Exam attempts for this version only.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -93,7 +103,7 @@ export default function ProgressPage() {
               if (
                 confirm("Clear all practice attempts? This cannot be undone.")
               ) {
-                clearAttempts();
+                clearAttempts(version);
                 refresh();
               }
             }}
@@ -104,7 +114,7 @@ export default function ProgressPage() {
           <button
             onClick={() => {
               if (confirm("Clear all exam history? This cannot be undone.")) {
-                clearExamHistory();
+                clearExamHistory(version);
                 refresh();
               }
             }}

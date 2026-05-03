@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ALL_CATEGORIES,
-  getById,
+  getCategories,
+  getQuestionById,
   isAnswerCorrect,
 } from "../lib/questions";
 import { clearExamSession, loadExamSession } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import QuestionCard from "../components/QuestionCard";
 import type { Question } from "../types";
 import { Icon } from "../components/Icon";
@@ -14,7 +15,9 @@ type Filter = "all" | "wrong" | "flagged" | "unanswered" | "correct";
 
 export default function ExamReviewPage() {
   const navigate = useNavigate();
-  const session = loadExamSession();
+  const { version } = useContentVersion();
+  const session = loadExamSession(version);
+  const ALL_CATEGORIES = useMemo(() => getCategories(version), [version]);
   const [filter, setFilter] = useState<Filter>("all");
   const [cursor, setCursor] = useState(0);
 
@@ -26,7 +29,7 @@ export default function ExamReviewPage() {
     if (!session) return [];
     return session.questionIds
       .map((id) => {
-        const q = getById(id);
+        const q = getQuestionById(version, id);
         if (!q || q.error) return null;
         const sel = session.answers[id] || [];
         const correct = isAnswerCorrect(q as Question, sel);
@@ -38,7 +41,7 @@ export default function ExamReviewPage() {
         };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
-  }, [session]);
+  }, [session, version]);
 
   const filtered = useMemo(() => {
     return data.filter((d) => {
@@ -79,7 +82,7 @@ export default function ExamReviewPage() {
       if (d.correct) stats[d.q.category].correct += 1;
     }
     return stats;
-  }, [data]);
+  }, [data, ALL_CATEGORIES]);
 
   if (!session || !session.finishedAt) return null;
 
@@ -146,7 +149,7 @@ export default function ExamReviewPage() {
             <Link
               to="/exam"
               className="btn-primary"
-              onClick={() => clearExamSession()}
+              onClick={() => clearExamSession(version)}
             >
               <Icon name="play" size={14} /> Take another exam
             </Link>

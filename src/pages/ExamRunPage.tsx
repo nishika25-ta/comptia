@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getById, isAnswerCorrect } from "../lib/questions";
+import { getQuestionById, isAnswerCorrect } from "../lib/questions";
 import {
   loadExamSession,
   pushExamHistory,
   saveExamSession,
 } from "../lib/storage";
+import { useContentVersion } from "../lib/contentVersion";
 import QuestionCard from "../components/QuestionCard";
 import type { ExamSession, Question } from "../types";
 import { Icon } from "../components/Icon";
 
 export default function ExamRunPage() {
   const navigate = useNavigate();
+  const { version } = useContentVersion();
   const [session, setSession] = useState<ExamSession | null>(() =>
-    loadExamSession()
+    loadExamSession(version)
   );
   const [now, setNow] = useState(Date.now());
   const [cursor, setCursor] = useState(0);
@@ -22,6 +24,10 @@ export default function ExamRunPage() {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    setSession(loadExamSession(version));
+  }, [version]);
 
   useEffect(() => {
     if (!session) navigate("/exam");
@@ -37,9 +43,9 @@ export default function ExamRunPage() {
   const questions: Question[] = useMemo(() => {
     if (!session) return [];
     return session.questionIds
-      .map((id) => getById(id))
+      .map((id) => getQuestionById(version, id))
       .filter((q): q is Question => Boolean(q && !q.error));
-  }, [session]);
+  }, [session, version]);
 
   const current = questions[cursor];
   const remainingMs = session
@@ -56,7 +62,7 @@ export default function ExamRunPage() {
       answers: { ...session.answers, [current.id]: letters },
     };
     setSession(next);
-    saveExamSession(next);
+    saveExamSession(version, next);
   }
 
   function toggleFlag() {
@@ -66,14 +72,14 @@ export default function ExamRunPage() {
     else set.add(current.id);
     const next = { ...session, flagged: Array.from(set) };
     setSession(next);
-    saveExamSession(next);
+    saveExamSession(version, next);
   }
 
   function finishExam() {
     if (!session) return;
     let correct = 0;
     for (const id of session.questionIds) {
-      const q = getById(id);
+      const q = getQuestionById(version, id);
       if (!q) continue;
       const ans = session.answers[id] || [];
       if (isAnswerCorrect(q, ans)) correct++;
@@ -87,8 +93,8 @@ export default function ExamRunPage() {
           ? correct / session.questionIds.length
           : 0,
     };
-    pushExamHistory(finished);
-    saveExamSession(finished);
+    pushExamHistory(version, finished);
+    saveExamSession(version, finished);
     navigate("/exam/review");
   }
 

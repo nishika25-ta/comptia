@@ -1,24 +1,45 @@
-import notesData from "../data/notes.json";
-import glossaryData from "../data/glossary.json";
-import type { Block, GlossaryEntry, Lesson } from "../types";
+import notesV1 from "../data/notes.json";
+import notesV2 from "../data/notes2.json";
+import glossaryV1 from "../data/glossary.json";
+import glossaryV2 from "../data/glossary2.json";
+import type { Block, ContentVersion, GlossaryEntry, Lesson } from "../types";
 
-export const LESSONS = notesData as Lesson[];
-export const GLOSSARY = glossaryData as GlossaryEntry[];
+const LESSONS_POOL: Record<ContentVersion, Lesson[]> = {
+  v1: notesV1 as Lesson[],
+  v2: notesV2 as Lesson[],
+};
 
-export function getLesson(id: number | string): Lesson | undefined {
-  const numId = typeof id === "string" ? parseInt(id, 10) : id;
-  return LESSONS.find((l) => l.id === numId);
+const GLOSSARY_POOL: Record<ContentVersion, GlossaryEntry[]> = {
+  v1: glossaryV1 as GlossaryEntry[],
+  v2: glossaryV2 as GlossaryEntry[],
+};
+
+export function getLessons(version: ContentVersion): Lesson[] {
+  return LESSONS_POOL[version];
 }
 
-export function getTopic(lessonId: number | string, topicId: string) {
-  const lesson = getLesson(lessonId);
+export function getGlossary(version: ContentVersion): GlossaryEntry[] {
+  return GLOSSARY_POOL[version];
+}
+
+export function getLesson(
+  version: ContentVersion,
+  id: number | string
+): Lesson | undefined {
+  const numId = typeof id === "string" ? parseInt(id, 10) : id;
+  return getLessons(version).find((l) => l.id === numId);
+}
+
+export function getTopic(
+  version: ContentVersion,
+  lessonId: number | string,
+  topicId: string
+) {
+  const lesson = getLesson(version, lessonId);
   if (!lesson) return undefined;
   return lesson.topics.find((t) => t.id === topicId);
 }
 
-/**
- * Flatten a list of blocks into a string used for searching/preview.
- */
 export function blocksToText(blocks: Block[]): string {
   const parts: string[] = [];
   for (const b of blocks) {
@@ -72,11 +93,17 @@ function blockSnippet(block: Block): string {
   return "";
 }
 
-export function searchNotes(query: string, limit = 50): SearchResult[] {
+export function searchNotes(
+  version: ContentVersion,
+  query: string,
+  limit = 50
+): SearchResult[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
+  const lessons = getLessons(version);
+  const glossary = getGlossary(version);
   const results: SearchResult[] = [];
-  for (const lesson of LESSONS) {
+  for (const lesson of lessons) {
     lesson.introBlocks.forEach((block, idx) => {
       const snippet = blockSnippet(block);
       if (snippet.toLowerCase().includes(q)) {
@@ -106,7 +133,7 @@ export function searchNotes(query: string, limit = 50): SearchResult[] {
       });
     }
   }
-  for (const entry of GLOSSARY) {
+  for (const entry of glossary) {
     if (
       entry.term.toLowerCase().includes(q) ||
       entry.definition.toLowerCase().includes(q)
@@ -127,9 +154,6 @@ export function highlight(text: string, query: string): string {
   return text.replace(new RegExp(`(${escaped})`, "ig"), "<mark>$1</mark>");
 }
 
-/**
- * Compute reading time in minutes for a lesson (250 words/min).
- */
 export function lessonReadingMinutes(lesson: Lesson): number {
   const text = [
     blocksToText(lesson.introBlocks),
